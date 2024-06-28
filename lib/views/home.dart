@@ -36,26 +36,26 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      body: Center(
-        child: FutureBuilder(
-          future: futureTasks,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              List<Task> tasks = snapshot.data!;
-              return Text(
+      body: FutureBuilder(
+        future: futureTasks,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            List<Task> tasks = snapshot.data!;
+            return Center(
+              child: Text(
                 tasks[0].title,
-              );
-            } else if (snapshot.hasError) {
-              return Error(
-                message: "${snapshot.error}",
-              );
-            }
-
-            return const CircularProgressIndicator(
-              color: Colors.lightBlueAccent,
+              ),
             );
-          },
-        ),
+          } else if (snapshot.hasError) {
+            return Error(
+              message: "${snapshot.error}",
+            );
+          }
+
+          return const CircularProgressIndicator(
+            color: Colors.lightBlueAccent,
+          );
+        },
       ),
     );
   }
