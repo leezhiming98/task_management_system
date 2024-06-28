@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
 import '../models/task.dart';
+import './error.dart';
 
 class Home extends StatefulWidget {
   final String title;
@@ -41,9 +42,13 @@ class _HomeState extends State<Home> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               List<Task> tasks = snapshot.data!;
-              return Text(tasks[0].title);
+              return Text(
+                tasks[0].title,
+              );
             } else if (snapshot.hasError) {
-              return Text("${snapshot.error}");
+              return Error(
+                message: "${snapshot.error}",
+              );
             }
 
             return const CircularProgressIndicator(
