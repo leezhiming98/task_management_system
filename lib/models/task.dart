@@ -8,6 +8,7 @@ class Task {
   DateTime endDate;
   int defaultPosition;
   String urgencyName;
+  double progress;
 
   Task(
       {required this.id,
@@ -18,7 +19,8 @@ class Task {
       required this.startDate,
       required this.endDate,
       required this.defaultPosition,
-      required this.urgencyName});
+      required this.urgencyName,
+      required this.progress});
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
@@ -30,6 +32,7 @@ class Task {
         startDate: DateTime.parse(json["startDate"]),
         endDate: DateTime.parse(json["endDate"]),
         defaultPosition: json["defaultPosition"],
-        urgencyName: json["urgencyName"]);
+        urgencyName: json["urgencyName"],
+        progress: json["progress"] / 100);
   }
 }
