@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/api.dart';
+import '../models/task.dart';
 
 class Home extends StatefulWidget {
   final String title;
@@ -10,6 +12,14 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  late Future<List<Task>> futureTasks;
+
+  @override
+  void initState() {
+    super.initState();
+    futureTasks = getTasks();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,9 +35,21 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      body: const Center(
-        child: Text(
-          "Hello World!",
+      body: Center(
+        child: FutureBuilder(
+          future: futureTasks,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              List<Task> tasks = snapshot.data!;
+              return Text(tasks[0].title);
+            } else if (snapshot.hasError) {
+              return Text("${snapshot.error}");
+            }
+
+            return const CircularProgressIndicator(
+              color: Colors.lightBlueAccent,
+            );
+          },
         ),
       ),
     );

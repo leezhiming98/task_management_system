@@ -1,5 +1,5 @@
 class Task {
-  int id;
+  String id;
   DateTime createdAt;
   int assigneeUserId;
   String title;
@@ -19,4 +19,17 @@ class Task {
       required this.endDate,
       required this.defaultPosition,
       required this.urgencyName});
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+        id: json["id"],
+        createdAt: DateTime.parse(json["createdAt"]),
+        assigneeUserId: json["assigneeUserId"],
+        title: json["title"],
+        description: json["description"],
+        startDate: DateTime.parse(json["startDate"]),
+        endDate: DateTime.parse(json["endDate"]),
+        defaultPosition: json["defaultPosition"],
+        urgencyName: json["urgencyName"]);
+  }
 }
