@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: header,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlueAccent),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
       home: Home(

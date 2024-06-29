@@ -58,7 +58,7 @@ class _HomeState extends State<Home> {
 
           return const Center(
             child: CircularProgressIndicator(
-              color: Colors.lightBlueAccent,
+              color: Colors.green,
             ),
           );
         },
