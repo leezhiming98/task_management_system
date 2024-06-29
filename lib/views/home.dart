@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api.dart';
 import '../models/task.dart';
+import '../models/user.dart';
 import 'grid.dart';
 import 'error.dart';
 
@@ -15,11 +16,13 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   late Future<List<Task>> futureTasks;
+  late Future<List<User>> futureUsers;
 
   @override
   void initState() {
     super.initState();
     futureTasks = getTasks();
+    futureUsers = getUsers();
   }
 
   @override
@@ -38,12 +41,14 @@ class _HomeState extends State<Home> {
         ),
       ),
       body: FutureBuilder(
-        future: futureTasks,
-        builder: (context, snapshot) {
+        future: Future.wait([futureTasks, futureUsers]),
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           if (snapshot.hasData) {
-            List<Task> tasks = snapshot.data!;
+            List<Task> tasks = snapshot.data![0];
+            List<User> users = snapshot.data![1];
             return Grid(
-              data: tasks,
+              tasks: tasks,
+              users: users,
             );
           } else if (snapshot.hasError) {
             return Error(

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../models/task.dart';
+import '../models/user.dart';
 
 class Grid extends StatefulWidget {
-  final List<Task> data;
+  final List<Task> tasks;
+  final List<User> users;
 
-  const Grid({super.key, required this.data});
+  const Grid({super.key, required this.tasks, required this.users});
 
   @override
   State<Grid> createState() => _GridState();
@@ -14,11 +16,13 @@ class Grid extends StatefulWidget {
 
 class _GridState extends State<Grid> {
   late List<Task> tasks;
+  late List<User> users;
 
   @override
   void initState() {
     super.initState();
-    tasks = widget.data;
+    tasks = widget.tasks;
+    users = widget.users;
   }
 
   @override
@@ -69,33 +73,72 @@ class _GridState extends State<Grid> {
                   DataCell(
                     Text(
                       task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   DataCell(
-                    Text(
-                      task.description,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Text(
+                        task.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                   DataCell(
-                    LinearPercentIndicator(
-                      percent: task.progress,
-                      progressColor: Colors.green,
-                      lineHeight: 10,
+                    Center(
+                      child: Tooltip(
+                        message: "${task.progress}%",
+                        preferBelow: false,
+                        verticalOffset: -13,
+                        child: LinearPercentIndicator(
+                          percent: task.progress / 100,
+                          progressColor: task.progress >= 50
+                              ? Colors.green[400]
+                              : Colors.red[400],
+                          lineHeight: 15,
+                          width: 100,
+                        ),
+                      ),
                     ),
                   ),
                   DataCell(
-                    Text(
-                      task.assigneeUserId.toString(),
+                    Center(
+                      child: Tooltip(
+                        message: users
+                            .firstWhere(
+                                (u) => int.parse(u.id) == task.assigneeUserId)
+                            .name,
+                        preferBelow: false,
+                        verticalOffset: -13,
+                        child: CircleAvatar(
+                          radius: 15,
+                          backgroundImage: NetworkImage(
+                            users
+                                .firstWhere((u) =>
+                                    int.parse(u.id) == task.assigneeUserId)
+                                .avatar,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   DataCell(
-                    Text(
-                      "${DateFormat("dd.MM.yyyy").format(task.startDate)} - ${DateFormat("dd.MM.yyyy").format(task.endDate)}",
+                    Center(
+                      child: Text(
+                        "${DateFormat("dd.MM.yyyy").format(task.startDate)} - ${DateFormat("dd.MM.yyyy").format(task.endDate)}",
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                      ),
                     ),
                   ),
                   DataCell(
                     Text(
                       task.urgencyName,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
                     ),
                   ),
                   const DataCell(

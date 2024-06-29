@@ -8,7 +8,7 @@ class Task {
   DateTime endDate;
   int defaultPosition;
   String urgencyName;
-  double progress;
+  int progress;
 
   Task(
       {required this.id,
@@ -33,6 +33,6 @@ class Task {
         endDate: DateTime.parse(json["endDate"]),
         defaultPosition: json["defaultPosition"],
         urgencyName: json["urgencyName"],
-        progress: json["progress"] / 100);
+        progress: json["progress"]);
   }
 }
