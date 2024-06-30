@@ -19,6 +19,14 @@ class _GridState extends State<Grid> {
   bool sort = false;
   int index = 0;
   late List<Task> filteredTasks;
+  Map<String, String> filterQuery = {
+    "title": "",
+    "description": "",
+    "assignee": "",
+    "formattedDate": "",
+    "urgencyName": ""
+  };
+
   final List<TextEditingController> _controller =
       List.generate(6, (i) => TextEditingController());
 
@@ -72,73 +80,58 @@ class _GridState extends State<Grid> {
     }
   }
 
-  void onFilterColumn(int columnIndex, String text) {
-    text = text.toLowerCase();
+  void onFilterColumn(
+      {required Map<String, String> query, bool clear = false}) {
+    query.forEach((key, value) => query[key] = value.toLowerCase());
 
-    switch (columnIndex) {
-      case 0:
-        setState(() {
-          filteredTasks = text.isNotEmpty
-              ? initTasks
-                  .where((t) => t.title.toLowerCase().startsWith(text))
-                  .toList()
-              : initTasks;
-        });
-        break;
-      case 1:
-        setState(() {
-          filteredTasks = text.isNotEmpty
-              ? initTasks
-                  .where((t) => t.description.toLowerCase().startsWith(text))
-                  .toList()
-              : initTasks;
-        });
-        break;
-      case 3:
-        setState(() {
-          var uIds = users
-              .where((u) => u.name.toLowerCase().startsWith(text))
-              .map((u) => int.parse(u.id))
-              .toList();
-          filteredTasks = text.isNotEmpty
-              ? initTasks.where((t) => uIds.contains(t.assigneeUserId)).toList()
-              : initTasks;
-        });
-        break;
-      case 4:
-        setState(() {
-          filteredTasks = text.isNotEmpty
-              ? initTasks
-                  .where((t) => t.formattedDate!.startsWith(text))
-                  .toList()
-              : initTasks;
-        });
-        break;
-      case 5:
-        setState(() {
-          filteredTasks = text.isNotEmpty
-              ? initTasks
-                  .where((t) => t.urgencyName.toLowerCase().startsWith(text))
-                  .toList()
-              : initTasks;
-        });
-        break;
-      default:
-        setState(() {
-          filteredTasks = initTasks;
-        });
-        for (var c in _controller) {
-          c.clear();
-        }
-        break;
+    List<Task> temp = [...initTasks];
+
+    if (query["title"]!.isNotEmpty) {
+      temp = temp
+          .where((t) => t.title.toLowerCase().startsWith(query["title"]!))
+          .toList();
     }
+    if (query["description"]!.isNotEmpty) {
+      temp = temp
+          .where((t) =>
+              t.description.toLowerCase().startsWith(query["description"]!))
+          .toList();
+    }
+    if (query["assignee"]!.isNotEmpty) {
+      var assigneeIds = users
+          .where((u) => u.name.toLowerCase().startsWith(query["assignee"]!))
+          .map((u) => int.parse(u.id))
+          .toList();
+      temp = temp.where((t) => assigneeIds.contains(t.assigneeUserId)).toList();
+    }
+    if (query["formattedDate"]!.isNotEmpty) {
+      temp = temp
+          .where((t) => t.formattedDate!.startsWith(query["formattedDate"]!))
+          .toList();
+    }
+    if (query["urgencyName"]!.isNotEmpty) {
+      temp = temp
+          .where((t) =>
+              t.urgencyName.toLowerCase().startsWith(query["urgencyName"]!))
+          .toList();
+    }
+    if (clear) {
+      for (var c in _controller) {
+        c.clear();
+      }
+    }
+
+    setState(() {
+      filteredTasks = temp;
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    initTasks = filteredTasks = widget.tasks;
+    initTasks = widget.tasks;
     users = widget.users;
+    filteredTasks = [...initTasks];
   }
 
   @override
@@ -225,7 +218,10 @@ class _GridState extends State<Grid> {
                       ),
                     ),
                     onChanged: (text) {
-                      onFilterColumn(0, text);
+                      setState(() {
+                        filterQuery["title"] = text;
+                      });
+                      onFilterColumn(query: filterQuery);
                     },
                   ),
                 ),
@@ -240,7 +236,10 @@ class _GridState extends State<Grid> {
                       ),
                     ),
                     onChanged: (text) {
-                      onFilterColumn(1, text);
+                      setState(() {
+                        filterQuery["description"] = text;
+                      });
+                      onFilterColumn(query: filterQuery);
                     },
                   ),
                 ),
@@ -258,7 +257,10 @@ class _GridState extends State<Grid> {
                       ),
                     ),
                     onChanged: (text) {
-                      onFilterColumn(3, text);
+                      setState(() {
+                        filterQuery["assignee"] = text;
+                      });
+                      onFilterColumn(query: filterQuery);
                     },
                   ),
                 ),
@@ -273,7 +275,10 @@ class _GridState extends State<Grid> {
                       ),
                     ),
                     onChanged: (text) {
-                      onFilterColumn(4, text);
+                      setState(() {
+                        filterQuery["formattedDate"] = text;
+                      });
+                      onFilterColumn(query: filterQuery);
                     },
                   ),
                 ),
@@ -288,7 +293,10 @@ class _GridState extends State<Grid> {
                       ),
                     ),
                     onChanged: (text) {
-                      onFilterColumn(5, text);
+                      setState(() {
+                        filterQuery["urgencyName"] = text;
+                      });
+                      onFilterColumn(query: filterQuery);
                     },
                   ),
                 ),
@@ -298,7 +306,11 @@ class _GridState extends State<Grid> {
                       Icons.clear,
                     ),
                     onPressed: () {
-                      onFilterColumn(-1, "");
+                      setState(() {
+                        filterQuery
+                            .forEach((key, value) => filterQuery[key] = "");
+                      });
+                      onFilterColumn(query: filterQuery, clear: true);
                     },
                   ),
                 ),
