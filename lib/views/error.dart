@@ -13,7 +13,7 @@ class Error extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 20),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: Colors.red[200],
+          color: Colors.red[400],
           border: Border.all(
             color: Colors.white70,
             width: 8,

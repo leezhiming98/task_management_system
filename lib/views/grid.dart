@@ -14,8 +14,11 @@ class Grid extends StatefulWidget {
 }
 
 class _GridState extends State<Grid> {
-  late List<Task> initTasks;
+  late List<Task> allTasks;
+  late List<Task> initTasks; // for filtering use
   late List<User> users;
+  int currentPage = 0;
+  int pageSize = 15;
   bool sort = false;
   int index = 0;
   late List<Task> filteredTasks;
@@ -27,8 +30,26 @@ class _GridState extends State<Grid> {
     "urgencyName": ""
   };
 
-  final List<TextEditingController> _controller =
+  final ScrollController _scrollController = ScrollController();
+  final List<TextEditingController> _textController =
       List.generate(6, (i) => TextEditingController());
+
+  final infoToast = SnackBar(
+    content: const Center(
+      child: Text(
+        "All tasks have been successfully loaded!",
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+    width: 400,
+    behavior: SnackBarBehavior.floating,
+    backgroundColor: Colors.green[400],
+    showCloseIcon: true,
+    duration: const Duration(seconds: 1),
+  );
 
   void onSortColumn(int columnIndex, bool ascending) {
     setState(() {
@@ -116,7 +137,7 @@ class _GridState extends State<Grid> {
           .toList();
     }
     if (clear) {
-      for (var c in _controller) {
+      for (var c in _textController) {
         c.clear();
       }
     }
@@ -126,17 +147,41 @@ class _GridState extends State<Grid> {
     });
   }
 
+  void onPaginate() {
+    if (initTasks.length != allTasks.length) {
+      setState(() {
+        currentPage += 1;
+        initTasks = allTasks.take(currentPage * pageSize).toList();
+        filteredTasks = [...initTasks];
+      });
+      onFilterColumn(query: filterQuery);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(infoToast);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    initTasks = widget.tasks;
+    allTasks = widget.tasks;
     users = widget.users;
+
+    currentPage += 1;
+    initTasks = allTasks.take(currentPage * pageSize).toList();
     filteredTasks = [...initTasks];
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        onPaginate();
+      }
+    });
   }
 
   @override
   void dispose() {
-    for (var c in _controller) {
+    _scrollController.dispose();
+    for (var c in _textController) {
       c.dispose();
     }
     super.dispose();
@@ -158,6 +203,7 @@ class _GridState extends State<Grid> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SingleChildScrollView(
+          controller: _scrollController,
           scrollDirection: Axis.vertical,
           child: DataTable(
             sortAscending: sort,
@@ -224,7 +270,7 @@ class _GridState extends State<Grid> {
                     SizedBox(
                       width: 200,
                       child: TextField(
-                        controller: _controller[0],
+                        controller: _textController[0],
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Filter Title ...",
@@ -245,7 +291,7 @@ class _GridState extends State<Grid> {
                     SizedBox(
                       width: 500,
                       child: TextField(
-                        controller: _controller[1],
+                        controller: _textController[1],
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Filter Description ...",
@@ -271,7 +317,7 @@ class _GridState extends State<Grid> {
                     SizedBox(
                       width: 120,
                       child: TextField(
-                        controller: _controller[3],
+                        controller: _textController[3],
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Filter Assignee ...",
@@ -292,7 +338,7 @@ class _GridState extends State<Grid> {
                     SizedBox(
                       width: 160,
                       child: TextField(
-                        controller: _controller[4],
+                        controller: _textController[4],
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Filter Period ...",
@@ -313,7 +359,7 @@ class _GridState extends State<Grid> {
                     SizedBox(
                       width: 120,
                       child: TextField(
-                        controller: _controller[5],
+                        controller: _textController[5],
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: "Filter Urgency ...",
@@ -331,17 +377,20 @@ class _GridState extends State<Grid> {
                     ),
                   ),
                   DataCell(
-                    IconButton(
-                      icon: const Icon(
-                        Icons.clear,
+                    SizedBox(
+                      width: 20,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.clear,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            filterQuery
+                                .forEach((key, value) => filterQuery[key] = "");
+                          });
+                          onFilterColumn(query: filterQuery, clear: true);
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          filterQuery
-                              .forEach((key, value) => filterQuery[key] = "");
-                        });
-                        onFilterColumn(query: filterQuery, clear: true);
-                      },
                     ),
                   ),
                 ],
