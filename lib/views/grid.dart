@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:task_management_system/services/api.dart';
 import '../models/task.dart';
 import '../models/user.dart';
+import 'toast.dart';
 import 'loading.dart';
 
 class Grid extends StatefulWidget {
@@ -29,7 +31,7 @@ class _GridState extends State<Grid> {
   /// CONTROLLERS
   final ScrollController _scrollController = ScrollController();
   final List<TextEditingController> _textController =
-      List.generate(6, (i) => TextEditingController());
+      List.generate(7, (i) => TextEditingController());
 
   /// TABLE INFORMATION
   List<Map<String, dynamic>> columnDesc = [
@@ -118,23 +120,6 @@ class _GridState extends State<Grid> {
     );
   }
 
-  final infoToast = SnackBar(
-    content: const Center(
-      child: Text(
-        "All tasks have been successfully loaded!",
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-    width: 400,
-    behavior: SnackBarBehavior.floating,
-    backgroundColor: Colors.green[400],
-    showCloseIcon: true,
-    duration: const Duration(seconds: 1),
-  );
-
   /// TABLE FUNCTIONS
   void onSortColumn(int columnIndex, bool ascending) {
     setState(() {
@@ -222,8 +207,8 @@ class _GridState extends State<Grid> {
           .toList();
     }
     if (clear) {
-      for (var c in _textController) {
-        c.clear();
+      for (int i = 0; i <= 5; i++) {
+        _textController[i].clear();
       }
     }
 
@@ -251,8 +236,45 @@ class _GridState extends State<Grid> {
         });
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(infoToast);
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(
+            message: "All tasks have been successfully loaded!",
+            width: 400,
+            isSuccess: true,
+            duration: 1),
+      );
     }
+  }
+
+  void deleteCell(String id) async {
+    await deleteTask(id).then((success) {
+      if (success) {
+        setState(() {
+          allTasks.removeWhere((t) => t.id == id);
+          initTasks.removeWhere((t) => t.id == id);
+          filteredTasks.removeWhere((t) => t.id == id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Task has been successfully deleted!",
+              width: 350,
+              isSuccess: true,
+              duration: 1),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Failed To Delete Task!",
+              width: 350,
+              isSuccess: false,
+              duration: 1),
+        );
+      }
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(message: "$error", width: 350, isSuccess: false, duration: 1),
+      );
+    });
   }
 
   /// INITSTATE & DISPOSE
@@ -299,149 +321,230 @@ class _GridState extends State<Grid> {
             horizontal: gridLRMargin,
             vertical: gridTBMargin,
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              scrollDirection: Axis.vertical,
-              child: DataTable(
-                sortAscending: sort,
-                sortColumnIndex: index,
-                columns: [
-                  ...List.generate(
-                    columnDesc.length,
-                    (index) => DataColumn(
-                      label: Text(
-                        columnDesc[index]["header"],
-                      ),
-                      onSort: (columnIndex, ascending) {
-                        onSortColumn(columnIndex, ascending);
-                      },
-                    ),
-                  ),
-                  const DataColumn(
-                    label: Text(
-                      "",
-                    ),
-                  ),
-                ],
-                rows: [
-                  DataRow(
-                    cells: [
-                      ...columnDesc.map((c) => gridFilter(
-                          columnWidth: c["width"],
-                          columnIndex: c["position"],
-                          header: c["header"],
-                          filterKey: c["identifier"],
-                          filterable: c["filterable"])),
-                      DataCell(
-                        SizedBox(
-                          width: 48,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.clear,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.vertical,
+                    child: DataTable(
+                      sortAscending: sort,
+                      sortColumnIndex: index,
+                      columns: [
+                        ...List.generate(
+                          columnDesc.length,
+                          (index) => DataColumn(
+                            label: Text(
+                              columnDesc[index]["header"],
                             ),
-                            onPressed: () {
-                              setState(() {
-                                filterQuery.forEach(
-                                    (key, value) => filterQuery[key] = "");
-                              });
-                              onFilterColumn(query: filterQuery, clear: true);
+                            onSort: (columnIndex, ascending) {
+                              onSortColumn(columnIndex, ascending);
                             },
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  ...filteredTasks.map(
-                    (task) => DataRow(
-                      cells: [
-                        DataCell(
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 160),
-                            child: Text(
-                              task.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        const DataColumn(
+                          label: Text(
+                            "",
                           ),
                         ),
-                        DataCell(
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 520),
-                            child: Text(
-                              task.description,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: Tooltip(
-                              message: "${task.progress}%",
-                              preferBelow: false,
-                              verticalOffset: -13,
-                              child: LinearPercentIndicator(
-                                percent: task.progress / 100,
-                                progressColor: task.progress >= 50
-                                    ? Colors.green[400]
-                                    : Colors.red[400],
-                                lineHeight: 15,
-                                width: 100,
-                              ),
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Center(
-                            child: Tooltip(
-                              message: users
-                                  .firstWhere((u) =>
-                                      int.parse(u.id) == task.assigneeUserId)
-                                  .name,
-                              preferBelow: false,
-                              verticalOffset: -13,
-                              child: CircleAvatar(
-                                radius: 15,
-                                backgroundImage: NetworkImage(
-                                  users
-                                      .firstWhere((u) =>
-                                          int.parse(u.id) ==
-                                          task.assigneeUserId)
-                                      .avatar,
+                      ],
+                      rows: [
+                        DataRow(
+                          cells: [
+                            ...columnDesc.map((c) => gridFilter(
+                                columnWidth: c["width"],
+                                columnIndex: c["position"],
+                                header: c["header"],
+                                filterKey: c["identifier"],
+                                filterable: c["filterable"])),
+                            DataCell(
+                              SizedBox(
+                                width: 48,
+                                child: Center(
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        filterQuery.forEach((key, value) =>
+                                            filterQuery[key] = "");
+                                      });
+                                      onFilterColumn(
+                                          query: filterQuery, clear: true);
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                        DataCell(
-                          Center(
-                            child: Text(
-                              task.formattedDate!,
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            task.urgencyName,
-                            maxLines: 1,
-                            overflow: TextOverflow.visible,
-                          ),
-                        ),
-                        const DataCell(
-                          Text(
-                            "",
+                        ...filteredTasks.map(
+                          (task) => DataRow(
+                            cells: [
+                              DataCell(
+                                ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 160),
+                                  child: Text(
+                                    task.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 520),
+                                  child: Text(
+                                    task.description,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                Center(
+                                  child: Tooltip(
+                                    message: "${task.progress}%",
+                                    preferBelow: false,
+                                    verticalOffset: -13,
+                                    child: LinearPercentIndicator(
+                                      percent: task.progress / 100,
+                                      progressColor: task.progress >= 50
+                                          ? Colors.green[400]
+                                          : Colors.red[400],
+                                      lineHeight: 15,
+                                      width: 100,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                Center(
+                                  child: Tooltip(
+                                    message: users
+                                        .firstWhere((u) =>
+                                            int.parse(u.id) ==
+                                            task.assigneeUserId)
+                                        .name,
+                                    preferBelow: false,
+                                    verticalOffset: -13,
+                                    child: CircleAvatar(
+                                      radius: 15,
+                                      backgroundImage: NetworkImage(
+                                        users
+                                            .firstWhere((u) =>
+                                                int.parse(u.id) ==
+                                                task.assigneeUserId)
+                                            .avatar,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                Center(
+                                  child: Text(
+                                    task.formattedDate!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                ),
+                              ),
+                              DataCell(
+                                Text(
+                                  task.urgencyName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.visible,
+                                ),
+                              ),
+                              DataCell(
+                                Center(
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.more_vert,
+                                    ),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                              "Actions",
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text(
+                                                  "Clone",
+                                                  style: TextStyle(
+                                                    color: Colors.green[400],
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  deleteCell(task.id);
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text(
+                                                  "Delete",
+                                                  style: TextStyle(
+                                                    color: Colors.red[400],
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text(
+                                                  "Cancel",
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              TextField(
+                controller: _textController[6],
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.only(left: 25),
+                  border: InputBorder.none,
+                  hintText: "Add New Task ...",
+                  hintStyle: TextStyle(
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                onSubmitted: (text) {
+                  _textController[6].clear();
+                },
+              ),
+            ],
           ),
         ),
         if (loading) const Loading(),

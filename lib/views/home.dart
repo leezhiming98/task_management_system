@@ -3,7 +3,7 @@ import '../services/api.dart';
 import '../models/task.dart';
 import '../models/user.dart';
 import 'grid.dart';
-import 'error.dart';
+import 'toast.dart';
 import 'loading.dart';
 
 class Home extends StatefulWidget {
@@ -52,9 +52,16 @@ class _HomeState extends State<Home> {
               users: users,
             );
           } else if (snapshot.hasError) {
-            return Error(
-              message: "${snapshot.error}",
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                toast(
+                    message: "${snapshot.error}",
+                    width: 350,
+                    isSuccess: false,
+                    duration: 3),
+              );
+            });
+            return const Center();
           }
 
           return const Loading();
