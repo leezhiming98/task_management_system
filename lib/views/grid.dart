@@ -19,6 +19,7 @@ class _GridState extends State<Grid> {
   late List<User> users;
   int currentPage = 0;
   int pageSize = 15;
+  bool loading = false;
   bool sort = false;
   int index = 0;
   late List<Task> filteredTasks;
@@ -150,11 +151,21 @@ class _GridState extends State<Grid> {
   void onPaginate() {
     if (initTasks.length != allTasks.length) {
       setState(() {
-        currentPage += 1;
-        initTasks = allTasks.take(currentPage * pageSize).toList();
-        filteredTasks = [...initTasks];
+        loading = true;
       });
-      onFilterColumn(query: filterQuery);
+
+      // stimulate loading delay
+      Future.delayed(const Duration(seconds: 3), () {
+        setState(() {
+          currentPage += 1;
+          initTasks = allTasks.take(currentPage * pageSize).toList();
+          filteredTasks = [...initTasks];
+        });
+        onFilterColumn(query: filterQuery);
+        setState(() {
+          loading = false;
+        });
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(infoToast);
     }
@@ -194,293 +205,312 @@ class _GridState extends State<Grid> {
     final double gridTBMargin = screenSize.height * 0.06;
     final double gridWidth = screenSize.width - gridLRMargin * 2;
 
-    return Container(
-      width: gridWidth,
-      margin: EdgeInsets.symmetric(
-        horizontal: gridLRMargin,
-        vertical: gridTBMargin,
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          scrollDirection: Axis.vertical,
-          child: DataTable(
-            sortAscending: sort,
-            sortColumnIndex: index,
-            columns: [
-              DataColumn(
-                label: const Text(
-                  "Title",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              DataColumn(
-                label: const Text(
-                  "Description",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              DataColumn(
-                label: const Text(
-                  "Progress",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              DataColumn(
-                label: const Text(
-                  "Assignee",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              DataColumn(
-                label: const Text(
-                  "Period",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              DataColumn(
-                label: const Text(
-                  "Urgency",
-                ),
-                onSort: (columnIndex, ascending) {
-                  onSortColumn(columnIndex, ascending);
-                },
-              ),
-              const DataColumn(
-                label: Text(
-                  "",
-                ),
-              ),
-            ],
-            rows: [
-              DataRow(
-                cells: [
-                  DataCell(
-                    SizedBox(
-                      width: 200,
-                      child: TextField(
-                        controller: _textController[0],
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Filter Title ...",
-                          hintStyle: TextStyle(
-                            fontStyle: FontStyle.italic,
+    return Stack(
+      children: [
+        Container(
+          width: gridWidth,
+          margin: EdgeInsets.symmetric(
+            horizontal: gridLRMargin,
+            vertical: gridTBMargin,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.vertical,
+              child: DataTable(
+                sortAscending: sort,
+                sortColumnIndex: index,
+                columns: [
+                  DataColumn(
+                    label: const Text(
+                      "Title",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  DataColumn(
+                    label: const Text(
+                      "Description",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  DataColumn(
+                    label: const Text(
+                      "Progress",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  DataColumn(
+                    label: const Text(
+                      "Assignee",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  DataColumn(
+                    label: const Text(
+                      "Period",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  DataColumn(
+                    label: const Text(
+                      "Urgency",
+                    ),
+                    onSort: (columnIndex, ascending) {
+                      onSortColumn(columnIndex, ascending);
+                    },
+                  ),
+                  const DataColumn(
+                    label: Text(
+                      "",
+                    ),
+                  ),
+                ],
+                rows: [
+                  DataRow(
+                    cells: [
+                      DataCell(
+                        SizedBox(
+                          width: 160,
+                          child: TextField(
+                            controller: _textController[0],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Filter Title ...",
+                              hintStyle: TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            onChanged: (text) {
+                              setState(() {
+                                filterQuery["title"] = text;
+                              });
+                              onFilterColumn(query: filterQuery);
+                            },
                           ),
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            filterQuery["title"] = text;
-                          });
-                          onFilterColumn(query: filterQuery);
-                        },
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 500,
-                      child: TextField(
-                        controller: _textController[1],
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Filter Description ...",
-                          hintStyle: TextStyle(
-                            fontStyle: FontStyle.italic,
+                      DataCell(
+                        SizedBox(
+                          width: 520,
+                          child: TextField(
+                            controller: _textController[1],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Filter Description ...",
+                              hintStyle: TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            onChanged: (text) {
+                              setState(() {
+                                filterQuery["description"] = text;
+                              });
+                              onFilterColumn(query: filterQuery);
+                            },
                           ),
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            filterQuery["description"] = text;
-                          });
-                          onFilterColumn(query: filterQuery);
-                        },
                       ),
-                    ),
-                  ),
-                  const DataCell(
-                    SizedBox(
-                      width: 100,
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 120,
-                      child: TextField(
-                        controller: _textController[3],
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Filter Assignee ...",
-                          hintStyle: TextStyle(
-                            fontStyle: FontStyle.italic,
+                      const DataCell(
+                        SizedBox(
+                          width: 100,
+                        ),
+                      ),
+                      DataCell(
+                        SizedBox(
+                          width: 120,
+                          child: TextField(
+                            controller: _textController[3],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Filter Assignee ...",
+                              hintStyle: TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            onChanged: (text) {
+                              setState(() {
+                                filterQuery["assignee"] = text;
+                              });
+                              onFilterColumn(query: filterQuery);
+                            },
                           ),
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            filterQuery["assignee"] = text;
-                          });
-                          onFilterColumn(query: filterQuery);
-                        },
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 160,
-                      child: TextField(
-                        controller: _textController[4],
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Filter Period ...",
-                          hintStyle: TextStyle(
-                            fontStyle: FontStyle.italic,
+                      DataCell(
+                        SizedBox(
+                          width: 160,
+                          child: TextField(
+                            controller: _textController[4],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Filter Period ...",
+                              hintStyle: TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            onChanged: (text) {
+                              setState(() {
+                                filterQuery["formattedDate"] = text;
+                              });
+                              onFilterColumn(query: filterQuery);
+                            },
                           ),
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            filterQuery["formattedDate"] = text;
-                          });
-                          onFilterColumn(query: filterQuery);
-                        },
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 120,
-                      child: TextField(
-                        controller: _textController[5],
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Filter Urgency ...",
-                          hintStyle: TextStyle(
-                            fontStyle: FontStyle.italic,
+                      DataCell(
+                        SizedBox(
+                          width: 120,
+                          child: TextField(
+                            controller: _textController[5],
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: "Filter Urgency ...",
+                              hintStyle: TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            onChanged: (text) {
+                              setState(() {
+                                filterQuery["urgencyName"] = text;
+                              });
+                              onFilterColumn(query: filterQuery);
+                            },
                           ),
                         ),
-                        onChanged: (text) {
-                          setState(() {
-                            filterQuery["urgencyName"] = text;
-                          });
-                          onFilterColumn(query: filterQuery);
-                        },
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    SizedBox(
-                      width: 20,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.clear,
+                      DataCell(
+                        SizedBox(
+                          width: 48,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.clear,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                filterQuery.forEach(
+                                    (key, value) => filterQuery[key] = "");
+                              });
+                              onFilterColumn(query: filterQuery, clear: true);
+                            },
+                          ),
                         ),
-                        onPressed: () {
-                          setState(() {
-                            filterQuery
-                                .forEach((key, value) => filterQuery[key] = "");
-                          });
-                          onFilterColumn(query: filterQuery, clear: true);
-                        },
                       ),
+                    ],
+                  ),
+                  ...filteredTasks.map(
+                    (task) => DataRow(
+                      cells: [
+                        DataCell(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: Text(
+                              task.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: Text(
+                              task.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: Tooltip(
+                              message: "${task.progress}%",
+                              preferBelow: false,
+                              verticalOffset: -13,
+                              child: LinearPercentIndicator(
+                                percent: task.progress / 100,
+                                progressColor: task.progress >= 50
+                                    ? Colors.green[400]
+                                    : Colors.red[400],
+                                lineHeight: 15,
+                                width: 100,
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: Tooltip(
+                              message: users
+                                  .firstWhere((u) =>
+                                      int.parse(u.id) == task.assigneeUserId)
+                                  .name,
+                              preferBelow: false,
+                              verticalOffset: -13,
+                              child: CircleAvatar(
+                                radius: 15,
+                                backgroundImage: NetworkImage(
+                                  users
+                                      .firstWhere((u) =>
+                                          int.parse(u.id) ==
+                                          task.assigneeUserId)
+                                      .avatar,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Center(
+                            child: Text(
+                              task.formattedDate!,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            task.urgencyName,
+                            maxLines: 1,
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                        const DataCell(
+                          Text(
+                            "",
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              ...filteredTasks.map(
-                (task) => DataRow(
-                  cells: [
-                    DataCell(
-                      Text(
-                        task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    DataCell(
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 500),
-                        child: Text(
-                          task.description,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Center(
-                        child: Tooltip(
-                          message: "${task.progress}%",
-                          preferBelow: false,
-                          verticalOffset: -13,
-                          child: LinearPercentIndicator(
-                            percent: task.progress / 100,
-                            progressColor: task.progress >= 50
-                                ? Colors.green[400]
-                                : Colors.red[400],
-                            lineHeight: 15,
-                            width: 100,
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Center(
-                        child: Tooltip(
-                          message: users
-                              .firstWhere(
-                                  (u) => int.parse(u.id) == task.assigneeUserId)
-                              .name,
-                          preferBelow: false,
-                          verticalOffset: -13,
-                          child: CircleAvatar(
-                            radius: 15,
-                            backgroundImage: NetworkImage(
-                              users
-                                  .firstWhere((u) =>
-                                      int.parse(u.id) == task.assigneeUserId)
-                                  .avatar,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Center(
-                        child: Text(
-                          task.formattedDate!,
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        task.urgencyName,
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                    const DataCell(
-                      Text(
-                        "",
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        if (loading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.green,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
