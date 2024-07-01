@@ -15,15 +15,68 @@ class Grid extends StatefulWidget {
 }
 
 class _GridState extends State<Grid> {
+  /// STATES
   late List<Task> allTasks;
   late List<Task> initTasks; // for filtering use
+  late List<Task> filteredTasks;
   late List<User> users;
   int currentPage = 0;
   int pageSize = 15;
   bool loading = false;
   bool sort = false;
   int index = 0;
-  late List<Task> filteredTasks;
+
+  /// CONTROLLERS
+  final ScrollController _scrollController = ScrollController();
+  final List<TextEditingController> _textController =
+      List.generate(6, (i) => TextEditingController());
+
+  /// TABLE INFORMATION
+  List<Map<String, dynamic>> columnDesc = [
+    {
+      "position": 0,
+      "header": "Title",
+      "width": 160,
+      "identifier": "title",
+      "filterable": true,
+    },
+    {
+      "position": 1,
+      "header": "Description",
+      "width": 520,
+      "identifier": "description",
+      "filterable": true,
+    },
+    {
+      "position": 2,
+      "header": "Progress",
+      "width": 100,
+      "identifier": "progress",
+      "filterable": false,
+    },
+    {
+      "position": 3,
+      "header": "Assignee",
+      "width": 120,
+      "identifier": "assignee",
+      "filterable": true,
+    },
+    {
+      "position": 4,
+      "header": "Period",
+      "width": 160,
+      "identifier": "formattedDate",
+      "filterable": true,
+    },
+    {
+      "position": 5,
+      "header": "Urgency",
+      "width": 120,
+      "identifier": "urgencyName",
+      "filterable": true,
+    }
+  ];
+
   Map<String, String> filterQuery = {
     "title": "",
     "description": "",
@@ -32,9 +85,38 @@ class _GridState extends State<Grid> {
     "urgencyName": ""
   };
 
-  final ScrollController _scrollController = ScrollController();
-  final List<TextEditingController> _textController =
-      List.generate(6, (i) => TextEditingController());
+  DataCell gridFilter(
+      {required double columnWidth,
+      required int columnIndex,
+      required String header,
+      required String filterKey,
+      required bool filterable}) {
+    return DataCell(
+      filterable
+          ? SizedBox(
+              width: columnWidth,
+              child: TextField(
+                controller: _textController[columnIndex],
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Filter $header ...",
+                  hintStyle: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                onChanged: (text) {
+                  setState(() {
+                    filterQuery[filterKey] = text;
+                  });
+                  onFilterColumn(query: filterQuery);
+                },
+              ),
+            )
+          : SizedBox(
+              width: columnWidth,
+            ),
+    );
+  }
 
   final infoToast = SnackBar(
     content: const Center(
@@ -53,6 +135,7 @@ class _GridState extends State<Grid> {
     duration: const Duration(seconds: 1),
   );
 
+  /// TABLE FUNCTIONS
   void onSortColumn(int columnIndex, bool ascending) {
     setState(() {
       index = columnIndex;
@@ -172,6 +255,7 @@ class _GridState extends State<Grid> {
     }
   }
 
+  /// INITSTATE & DISPOSE
   @override
   void initState() {
     super.initState();
@@ -199,6 +283,7 @@ class _GridState extends State<Grid> {
     super.dispose();
   }
 
+  /// WIDGET
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
@@ -223,53 +308,16 @@ class _GridState extends State<Grid> {
                 sortAscending: sort,
                 sortColumnIndex: index,
                 columns: [
-                  DataColumn(
-                    label: const Text(
-                      "Title",
+                  ...List.generate(
+                    columnDesc.length,
+                    (index) => DataColumn(
+                      label: Text(
+                        columnDesc[index]["header"],
+                      ),
+                      onSort: (columnIndex, ascending) {
+                        onSortColumn(columnIndex, ascending);
+                      },
                     ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
-                  ),
-                  DataColumn(
-                    label: const Text(
-                      "Description",
-                    ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
-                  ),
-                  DataColumn(
-                    label: const Text(
-                      "Progress",
-                    ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
-                  ),
-                  DataColumn(
-                    label: const Text(
-                      "Assignee",
-                    ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
-                  ),
-                  DataColumn(
-                    label: const Text(
-                      "Period",
-                    ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
-                  ),
-                  DataColumn(
-                    label: const Text(
-                      "Urgency",
-                    ),
-                    onSort: (columnIndex, ascending) {
-                      onSortColumn(columnIndex, ascending);
-                    },
                   ),
                   const DataColumn(
                     label: Text(
@@ -280,116 +328,12 @@ class _GridState extends State<Grid> {
                 rows: [
                   DataRow(
                     cells: [
-                      DataCell(
-                        SizedBox(
-                          width: 160,
-                          child: TextField(
-                            controller: _textController[0],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Filter Title ...",
-                              hintStyle: TextStyle(
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            onChanged: (text) {
-                              setState(() {
-                                filterQuery["title"] = text;
-                              });
-                              onFilterColumn(query: filterQuery);
-                            },
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 520,
-                          child: TextField(
-                            controller: _textController[1],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Filter Description ...",
-                              hintStyle: TextStyle(
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            onChanged: (text) {
-                              setState(() {
-                                filterQuery["description"] = text;
-                              });
-                              onFilterColumn(query: filterQuery);
-                            },
-                          ),
-                        ),
-                      ),
-                      const DataCell(
-                        SizedBox(
-                          width: 100,
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 120,
-                          child: TextField(
-                            controller: _textController[3],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Filter Assignee ...",
-                              hintStyle: TextStyle(
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            onChanged: (text) {
-                              setState(() {
-                                filterQuery["assignee"] = text;
-                              });
-                              onFilterColumn(query: filterQuery);
-                            },
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 160,
-                          child: TextField(
-                            controller: _textController[4],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Filter Period ...",
-                              hintStyle: TextStyle(
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            onChanged: (text) {
-                              setState(() {
-                                filterQuery["formattedDate"] = text;
-                              });
-                              onFilterColumn(query: filterQuery);
-                            },
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        SizedBox(
-                          width: 120,
-                          child: TextField(
-                            controller: _textController[5],
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: "Filter Urgency ...",
-                              hintStyle: TextStyle(
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            onChanged: (text) {
-                              setState(() {
-                                filterQuery["urgencyName"] = text;
-                              });
-                              onFilterColumn(query: filterQuery);
-                            },
-                          ),
-                        ),
-                      ),
+                      ...columnDesc.map((c) => gridFilter(
+                          columnWidth: c["width"],
+                          columnIndex: c["position"],
+                          header: c["header"],
+                          filterKey: c["identifier"],
+                          filterable: c["filterable"])),
                       DataCell(
                         SizedBox(
                           width: 48,
