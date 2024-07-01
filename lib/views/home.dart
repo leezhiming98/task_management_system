@@ -4,6 +4,7 @@ import '../models/task.dart';
 import '../models/user.dart';
 import 'grid.dart';
 import 'error.dart';
+import 'loading.dart';
 
 class Home extends StatefulWidget {
   final String title;
@@ -56,11 +57,7 @@ class _HomeState extends State<Home> {
             );
           }
 
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Colors.green,
-            ),
-          );
+          return const Loading();
         },
       ),
     );

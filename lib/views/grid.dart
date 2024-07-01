@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../models/task.dart';
 import '../models/user.dart';
+import 'loading.dart';
 
 class Grid extends StatefulWidget {
   final List<Task> tasks;
@@ -499,17 +500,7 @@ class _GridState extends State<Grid> {
             ),
           ),
         ),
-        if (loading)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.green,
-                ),
-              ),
-            ),
-          ),
+        if (loading) const Loading(),
       ],
     );
   }
