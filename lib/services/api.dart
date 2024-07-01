@@ -17,6 +17,21 @@ Future<List<Task>> getTasks() async {
   }
 }
 
+Future<Task> addTask(Task task) async {
+  final response = await http.post(
+    Uri.parse(taskUrl),
+    headers: {"Content-Type": "application/json; charset=UTF-8"},
+    body: jsonEncode(task.toJson()),
+  );
+
+  if (response.statusCode == 201) {
+    var data = jsonDecode(response.body);
+    return Task.fromJson(data);
+  } else {
+    throw Exception("Failed To Add or Duplicate Task!");
+  }
+}
+
 Future<bool> deleteTask(String id) async {
   final response = await http.delete(Uri.parse("$taskUrl/$id"),
       headers: {"Content-Type": "application/json; charset=UTF-8"});

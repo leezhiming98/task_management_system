@@ -241,9 +241,46 @@ class _GridState extends State<Grid> {
             message: "All tasks have been successfully loaded!",
             width: 400,
             isSuccess: true,
-            duration: 1),
+            duration: 3),
       );
     }
+  }
+
+  void duplicateCell(String id) async {
+    int position = allTasks.indexWhere((t) => t.id == id);
+    Task clone = allTasks[position].copy();
+    clone.title = clone.title.startsWith("(Cloned)")
+        ? clone.title
+        : "(Cloned) ${clone.title}";
+
+    await addTask(clone).then((data) {
+      if (data.id.isNotEmpty) {
+        setState(() {
+          allTasks.insert(position + 1, data);
+          initTasks.insert(position + 1, data);
+          filteredTasks.insert(position + 1, data);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Task has been successfully duplicated!",
+              width: 400,
+              isSuccess: true,
+              duration: 3),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Failed To Add or Duplicate Task!",
+              width: 400,
+              isSuccess: false,
+              duration: 3),
+        );
+      }
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(message: "$error", width: 400, isSuccess: false, duration: 3),
+      );
+    });
   }
 
   void deleteCell(String id) async {
@@ -259,7 +296,7 @@ class _GridState extends State<Grid> {
               message: "Task has been successfully deleted!",
               width: 350,
               isSuccess: true,
-              duration: 1),
+              duration: 3),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,12 +304,12 @@ class _GridState extends State<Grid> {
               message: "Failed To Delete Task!",
               width: 350,
               isSuccess: false,
-              duration: 1),
+              duration: 3),
         );
       }
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        toast(message: "$error", width: 350, isSuccess: false, duration: 1),
+        toast(message: "$error", width: 350, isSuccess: false, duration: 3),
       );
     });
   }
@@ -482,6 +519,7 @@ class _GridState extends State<Grid> {
                                             actions: [
                                               TextButton(
                                                 onPressed: () {
+                                                  duplicateCell(task.id);
                                                   Navigator.of(context).pop();
                                                 },
                                                 child: Text(

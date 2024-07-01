@@ -45,4 +45,35 @@ class Task {
           "${DateFormat("dd.MM.yyyy").format(dtStartDate)} - ${DateFormat("dd.MM.yyyy").format(dtEndDate)}",
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "createdAt": createdAt.toIso8601String(),
+      "assigneeUserId": assigneeUserId,
+      "title": title,
+      "description": description,
+      "startDate": startDate.toIso8601String(),
+      "endDate": endDate.toIso8601String(),
+      "defaultPosition": defaultPosition,
+      "urgencyName": urgencyName,
+      "progress": progress,
+    };
+  }
+
+  Task copy() {
+    return Task(
+      id: "",
+      createdAt: DateTime.now(),
+      assigneeUserId: assigneeUserId,
+      title: title,
+      description: description,
+      startDate: startDate,
+      endDate: endDate,
+      defaultPosition: defaultPosition,
+      urgencyName: urgencyName,
+      progress: progress,
+      formattedDate: formattedDate,
+    );
+  }
 }
