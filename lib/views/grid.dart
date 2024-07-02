@@ -301,6 +301,48 @@ class _GridState extends State<Grid> {
     });
   }
 
+  void updateCell(String id, Task updated, int position) async {
+    setState(() {
+      loading = true;
+    });
+
+    await updateTask(id, updated).then((data) {
+      if (data.id.isNotEmpty) {
+        setState(() {
+          allTasks[position] = data;
+          initTasks[position] = data;
+          filteredTasks[position] = data;
+        });
+        _textController[7].clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Task has been successfully updated!",
+              width: 350,
+              isSuccess: true,
+              duration: 3),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Failed To Update Task!",
+              width: 350,
+              isSuccess: false,
+              duration: 3),
+        );
+      }
+      setState(() {
+        loading = false;
+      });
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(message: "$error", width: 350, isSuccess: false, duration: 3),
+      );
+      setState(() {
+        loading = false;
+      });
+    });
+  }
+
   void duplicateCell(String id) async {
     setState(() {
       loading = true;
@@ -646,8 +688,25 @@ class _GridState extends State<Grid> {
                                                                   ),
                                                                 ),
                                                                 onTap: () {
-                                                                  // setState(() {});
-                                                                  // _textController[7].clear();
+                                                                  int position =
+                                                                      allTasks.indexWhere((t) =>
+                                                                          t.id ==
+                                                                          task.id);
+                                                                  Task updated =
+                                                                      allTasks[
+                                                                              position]
+                                                                          .copy();
+                                                                  updated.assigneeUserId =
+                                                                      int.parse(
+                                                                          filteredAvatars[index]
+                                                                              .id);
+                                                                  updateCell(
+                                                                      task.id,
+                                                                      updated,
+                                                                      position);
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .pop();
                                                                 },
                                                               ),
                                                             );

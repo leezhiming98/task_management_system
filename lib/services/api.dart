@@ -32,6 +32,21 @@ Future<Task> addTask(Task task) async {
   }
 }
 
+Future<Task> updateTask(String id, Task task) async {
+  final response = await http.put(
+    Uri.parse("$taskUrl/$id"),
+    headers: {"Content-Type": "application/json; charset=UTF-8"},
+    body: jsonEncode(task.toJson()),
+  );
+
+  if (response.statusCode == 200) {
+    var data = jsonDecode(response.body);
+    return Task.fromJson(data);
+  } else {
+    throw Exception("Failed To Update Task!");
+  }
+}
+
 Future<bool> deleteTask(String id) async {
   final response = await http.delete(Uri.parse("$taskUrl/$id"),
       headers: {"Content-Type": "application/json; charset=UTF-8"});
