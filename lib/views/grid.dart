@@ -211,7 +211,6 @@ class _GridState extends State<Grid> {
         _textController[i].clear();
       }
     }
-
     setState(() {
       filteredTasks = temp;
     });
@@ -246,7 +245,67 @@ class _GridState extends State<Grid> {
     }
   }
 
+  void addCell(String title) async {
+    setState(() {
+      loading = true;
+    });
+
+    DateTime today = DateTime.now();
+    Task task = Task(
+      id: "",
+      createdAt: today,
+      assigneeUserId: 0,
+      title: title,
+      description: "Placeholder Description ...",
+      startDate: today,
+      endDate: today.add(const Duration(days: 365)),
+      defaultPosition: 1,
+      urgencyName: "Low",
+      progress: 0,
+    );
+
+    await addTask(task).then((data) {
+      if (data.id.isNotEmpty) {
+        setState(() {
+          allTasks.insert(0, data);
+          initTasks.insert(0, data);
+          filteredTasks.insert(0, data);
+        });
+        _textController[6].clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Task has been successfully added!",
+              width: 350,
+              isSuccess: true,
+              duration: 3),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          toast(
+              message: "Failed To Add or Duplicate Task!",
+              width: 400,
+              isSuccess: false,
+              duration: 3),
+        );
+      }
+      setState(() {
+        loading = false;
+      });
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(message: "$error", width: 400, isSuccess: false, duration: 3),
+      );
+      setState(() {
+        loading = false;
+      });
+    });
+  }
+
   void duplicateCell(String id) async {
+    setState(() {
+      loading = true;
+    });
+
     int position = allTasks.indexWhere((t) => t.id == id);
     Task clone = allTasks[position].copy();
     clone.title = clone.title.startsWith("(Cloned)")
@@ -276,14 +335,24 @@ class _GridState extends State<Grid> {
               duration: 3),
         );
       }
+      setState(() {
+        loading = false;
+      });
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
         toast(message: "$error", width: 400, isSuccess: false, duration: 3),
       );
+      setState(() {
+        loading = false;
+      });
     });
   }
 
   void deleteCell(String id) async {
+    setState(() {
+      loading = true;
+    });
+
     await deleteTask(id).then((success) {
       if (success) {
         setState(() {
@@ -307,10 +376,16 @@ class _GridState extends State<Grid> {
               duration: 3),
         );
       }
+      setState(() {
+        loading = false;
+      });
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(
         toast(message: "$error", width: 350, isSuccess: false, duration: 3),
       );
+      setState(() {
+        loading = false;
+      });
     });
   }
 
@@ -390,12 +465,14 @@ class _GridState extends State<Grid> {
                       rows: [
                         DataRow(
                           cells: [
-                            ...columnDesc.map((c) => gridFilter(
-                                columnWidth: c["width"],
-                                columnIndex: c["position"],
-                                header: c["header"],
-                                filterKey: c["identifier"],
-                                filterable: c["filterable"])),
+                            ...columnDesc.map(
+                              (c) => gridFilter(
+                                  columnWidth: c["width"],
+                                  columnIndex: c["position"],
+                                  header: c["header"],
+                                  filterKey: c["identifier"],
+                                  filterable: c["filterable"]),
+                            ),
                             DataCell(
                               SizedBox(
                                 width: 48,
@@ -460,29 +537,31 @@ class _GridState extends State<Grid> {
                                   ),
                                 ),
                               ),
-                              DataCell(
-                                Center(
-                                  child: Tooltip(
-                                    message: users
-                                        .firstWhere((u) =>
-                                            int.parse(u.id) ==
-                                            task.assigneeUserId)
-                                        .name,
-                                    preferBelow: false,
-                                    verticalOffset: -13,
-                                    child: CircleAvatar(
-                                      radius: 15,
-                                      backgroundImage: NetworkImage(
-                                        users
-                                            .firstWhere((u) =>
-                                                int.parse(u.id) ==
-                                                task.assigneeUserId)
-                                            .avatar,
+                              task.assigneeUserId > 0
+                                  ? DataCell(
+                                      Center(
+                                        child: Tooltip(
+                                          message: users
+                                              .firstWhere((u) =>
+                                                  int.parse(u.id) ==
+                                                  task.assigneeUserId)
+                                              .name,
+                                          preferBelow: false,
+                                          verticalOffset: -13,
+                                          child: CircleAvatar(
+                                            radius: 15,
+                                            backgroundImage: NetworkImage(
+                                              users
+                                                  .firstWhere((u) =>
+                                                      int.parse(u.id) ==
+                                                      task.assigneeUserId)
+                                                  .avatar,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                                    )
+                                  : const DataCell(Center()),
                               DataCell(
                                 Center(
                                   child: Text(
@@ -579,7 +658,17 @@ class _GridState extends State<Grid> {
                   ),
                 ),
                 onSubmitted: (text) {
-                  _textController[6].clear();
+                  if (text.length <= 5) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      toast(
+                          message: "New Task Title Must Exceed 5 Characters !",
+                          width: 400,
+                          isSuccess: false,
+                          duration: 3),
+                    );
+                  } else {
+                    addCell(text);
+                  }
                 },
               ),
             ],

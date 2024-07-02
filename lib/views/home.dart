@@ -45,7 +45,7 @@ class _HomeState extends State<Home> {
         future: Future.wait([futureTasks, futureUsers]),
         builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           if (snapshot.hasData) {
-            List<Task> tasks = snapshot.data![0];
+            List<Task> tasks = snapshot.data![0].reversed.toList();
             List<User> users = snapshot.data![1];
             return Grid(
               tasks: tasks,
