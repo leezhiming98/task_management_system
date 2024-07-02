@@ -31,7 +31,7 @@ class _GridState extends State<Grid> {
   /// CONTROLLERS
   final ScrollController _scrollController = ScrollController();
   final List<TextEditingController> _textController =
-      List.generate(7, (i) => TextEditingController());
+      List.generate(8, (i) => TextEditingController());
 
   /// TABLE INFORMATION
   List<Map<String, dynamic>> columnDesc = [
@@ -537,9 +537,9 @@ class _GridState extends State<Grid> {
                                   ),
                                 ),
                               ),
-                              task.assigneeUserId > 0
-                                  ? DataCell(
-                                      Center(
+                              DataCell(
+                                task.assigneeUserId > 0
+                                    ? Center(
                                         child: Tooltip(
                                           message: users
                                               .firstWhere((u) =>
@@ -559,9 +559,125 @@ class _GridState extends State<Grid> {
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    )
-                                  : const DataCell(Center()),
+                                      )
+                                    : const Center(),
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (BuildContext context) {
+                                      List<User> filteredAvatars = [...users];
+
+                                      return StatefulBuilder(
+                                        builder: (BuildContext context,
+                                            StateSetter setState) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                              "Assignee",
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                              ),
+                                            ),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SizedBox(
+                                                  child: TextField(
+                                                    controller:
+                                                        _textController[7],
+                                                    decoration:
+                                                        const InputDecoration(
+                                                      border: InputBorder.none,
+                                                      hintText:
+                                                          "Search Assignee ...",
+                                                      hintStyle: TextStyle(
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                      ),
+                                                    ),
+                                                    onChanged: (text) {
+                                                      var query =
+                                                          text.toLowerCase();
+                                                      List<User> temp = [
+                                                        ...users
+                                                      ];
+
+                                                      if (query.isNotEmpty) {
+                                                        temp = temp
+                                                            .where((u) => u.name
+                                                                .toLowerCase()
+                                                                .startsWith(
+                                                                    query))
+                                                            .toList();
+                                                      }
+                                                      setState(() {
+                                                        filteredAvatars = temp;
+                                                      });
+                                                    },
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 230,
+                                                  height: 160,
+                                                  child: filteredAvatars
+                                                          .isNotEmpty
+                                                      ? GridView.builder(
+                                                          gridDelegate:
+                                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                                            crossAxisCount: 3,
+                                                          ),
+                                                          itemCount:
+                                                              filteredAvatars
+                                                                  .length,
+                                                          itemBuilder:
+                                                              (BuildContext
+                                                                      context,
+                                                                  int index) {
+                                                            return Center(
+                                                              child: InkWell(
+                                                                child:
+                                                                    CircleAvatar(
+                                                                  radius: 20,
+                                                                  backgroundImage:
+                                                                      NetworkImage(
+                                                                    filteredAvatars[
+                                                                            index]
+                                                                        .avatar,
+                                                                  ),
+                                                                ),
+                                                                onTap: () {
+                                                                  // setState(() {});
+                                                                  // _textController[7].clear();
+                                                                },
+                                                              ),
+                                                            );
+                                                          },
+                                                        )
+                                                      : const Center(),
+                                                ),
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  _textController[7].clear();
+                                                  Navigator.of(context).pop();
+                                                },
+                                                child: Text(
+                                                  "Cancel",
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
                               DataCell(
                                 Center(
                                   child: Text(
@@ -587,6 +703,7 @@ class _GridState extends State<Grid> {
                                     onPressed: () {
                                       showDialog(
                                         context: context,
+                                        barrierDismissible: false,
                                         builder: (BuildContext context) {
                                           return AlertDialog(
                                             title: const Text(
