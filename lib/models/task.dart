@@ -12,19 +12,22 @@ class Task {
   String urgencyName;
   int progress;
   String? formattedDate;
+  bool isEditing;
 
-  Task(
-      {required this.id,
-      required this.createdAt,
-      required this.assigneeUserId,
-      required this.title,
-      required this.description,
-      required this.startDate,
-      required this.endDate,
-      required this.defaultPosition,
-      required this.urgencyName,
-      required this.progress,
-      this.formattedDate});
+  Task({
+    required this.id,
+    required this.createdAt,
+    required this.assigneeUserId,
+    required this.title,
+    required this.description,
+    required this.startDate,
+    required this.endDate,
+    required this.defaultPosition,
+    required this.urgencyName,
+    required this.progress,
+    this.formattedDate,
+    required this.isEditing,
+  });
 
   factory Task.fromJson(Map<String, dynamic> json) {
     DateTime dtStartDate = DateTime.parse(json["startDate"]);
@@ -43,6 +46,7 @@ class Task {
       progress: json["progress"],
       formattedDate:
           "${DateFormat("dd.MM.yyyy").format(dtStartDate)} - ${DateFormat("dd.MM.yyyy").format(dtEndDate)}",
+      isEditing: false,
     );
   }
 
@@ -74,6 +78,7 @@ class Task {
       urgencyName: urgencyName,
       progress: progress,
       formattedDate: formattedDate,
+      isEditing: false,
     );
   }
 }

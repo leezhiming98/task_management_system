@@ -29,9 +29,13 @@ class _GridState extends State<Grid> {
   int index = 0;
 
   /// CONTROLLERS
-  final ScrollController _scrollController = ScrollController();
+  ///  0 - 5  for filter columns
+  ///  6      for add new task
+  ///  7      for search assignee
   final List<TextEditingController> _textController =
       List.generate(8, (i) => TextEditingController());
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
 
   /// TABLE INFORMATION
   List<Map<String, dynamic>> columnDesc = [
@@ -85,6 +89,12 @@ class _GridState extends State<Grid> {
     "assignee": "",
     "formattedDate": "",
     "urgencyName": ""
+  };
+
+  Map<String, String> editableValue = {
+    "title": "",
+    "description": "",
+    "progress": ""
   };
 
   DataCell gridFilter(
@@ -262,6 +272,7 @@ class _GridState extends State<Grid> {
       defaultPosition: 1,
       urgencyName: "Low",
       progress: 0,
+      isEditing: false,
     );
 
     await addTask(task).then((data) {
@@ -448,6 +459,16 @@ class _GridState extends State<Grid> {
         onPaginate();
       }
     });
+
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        setState(() {
+          for (var t in filteredTasks) {
+            t.isEditing = false;
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -456,6 +477,7 @@ class _GridState extends State<Grid> {
     for (var c in _textController) {
       c.dispose();
     }
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -539,45 +561,102 @@ class _GridState extends State<Grid> {
                         ),
                         ...filteredTasks.map(
                           (task) => DataRow(
+                            color: task.isEditing
+                                ? WidgetStateProperty.all(
+                                    Colors.black.withOpacity(0.1))
+                                : null,
                             cells: [
                               DataCell(
                                 ConstrainedBox(
                                   constraints:
                                       const BoxConstraints(maxWidth: 160),
-                                  child: Text(
-                                    task.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  child: !task.isEditing
+                                      ? Text(
+                                          task.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                      : TextFormField(
+                                          initialValue: task.title,
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                          ),
+                                          onFieldSubmitted: (text) {},
+                                        ),
                                 ),
+                                onTap: () {
+                                  setState(() {
+                                    for (var t in filteredTasks) {
+                                      t.isEditing = false;
+                                    }
+                                    task.isEditing = true;
+                                  });
+                                },
                               ),
                               DataCell(
                                 ConstrainedBox(
                                   constraints:
                                       const BoxConstraints(maxWidth: 520),
-                                  child: Text(
-                                    task.description,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  child: !task.isEditing
+                                      ? Text(
+                                          task.description,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                      : TextFormField(
+                                          initialValue: task.description,
+                                          decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                          ),
+                                          onFieldSubmitted: (text) {},
+                                        ),
                                 ),
+                                onTap: () {
+                                  setState(() {
+                                    for (var t in filteredTasks) {
+                                      t.isEditing = false;
+                                    }
+                                    task.isEditing = true;
+                                  });
+                                },
                               ),
                               DataCell(
                                 Center(
-                                  child: Tooltip(
-                                    message: "${task.progress}%",
-                                    preferBelow: false,
-                                    verticalOffset: -13,
-                                    child: LinearPercentIndicator(
-                                      percent: task.progress / 100,
-                                      progressColor: task.progress >= 50
-                                          ? Colors.green[400]
-                                          : Colors.red[400],
-                                      lineHeight: 15,
-                                      width: 100,
-                                    ),
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 100),
+                                    child: !task.isEditing
+                                        ? Tooltip(
+                                            message: "${task.progress}%",
+                                            preferBelow: false,
+                                            verticalOffset: -13,
+                                            child: LinearPercentIndicator(
+                                              percent: task.progress / 100,
+                                              progressColor: task.progress >= 50
+                                                  ? Colors.green[400]
+                                                  : Colors.red[400],
+                                              lineHeight: 15,
+                                              width: 100,
+                                            ),
+                                          )
+                                        : TextFormField(
+                                            initialValue: "${task.progress}",
+                                            textAlign: TextAlign.center,
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                            ),
+                                            onFieldSubmitted: (text) {},
+                                          ),
                                   ),
                                 ),
+                                onTap: () {
+                                  setState(() {
+                                    for (var t in filteredTasks) {
+                                      t.isEditing = false;
+                                    }
+                                    task.isEditing = true;
+                                  });
+                                },
                               ),
                               DataCell(
                                 task.assigneeUserId > 0
@@ -604,148 +683,29 @@ class _GridState extends State<Grid> {
                                       )
                                     : const Center(),
                                 onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (BuildContext context) {
-                                      List<User> filteredAvatars = [...users];
-
-                                      return StatefulBuilder(
-                                        builder: (BuildContext context,
-                                            StateSetter setState) {
-                                          return AlertDialog(
-                                            title: const Text(
-                                              "Assignee",
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                              ),
-                                            ),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                SizedBox(
-                                                  child: TextField(
-                                                    controller:
-                                                        _textController[7],
-                                                    decoration:
-                                                        const InputDecoration(
-                                                      border: InputBorder.none,
-                                                      hintText:
-                                                          "Search Assignee ...",
-                                                      hintStyle: TextStyle(
-                                                        fontStyle:
-                                                            FontStyle.italic,
-                                                      ),
-                                                    ),
-                                                    onChanged: (text) {
-                                                      var query =
-                                                          text.toLowerCase();
-                                                      List<User> temp = [
-                                                        ...users
-                                                      ];
-
-                                                      if (query.isNotEmpty) {
-                                                        temp = temp
-                                                            .where((u) => u.name
-                                                                .toLowerCase()
-                                                                .startsWith(
-                                                                    query))
-                                                            .toList();
-                                                      }
-                                                      setState(() {
-                                                        filteredAvatars = temp;
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 230,
-                                                  height: 160,
-                                                  child: filteredAvatars
-                                                          .isNotEmpty
-                                                      ? GridView.builder(
-                                                          gridDelegate:
-                                                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                                            crossAxisCount: 3,
-                                                          ),
-                                                          itemCount:
-                                                              filteredAvatars
-                                                                  .length,
-                                                          itemBuilder:
-                                                              (BuildContext
-                                                                      context,
-                                                                  int index) {
-                                                            return Center(
-                                                              child: InkWell(
-                                                                child:
-                                                                    CircleAvatar(
-                                                                  radius: 20,
-                                                                  backgroundImage:
-                                                                      NetworkImage(
-                                                                    filteredAvatars[
-                                                                            index]
-                                                                        .avatar,
-                                                                  ),
-                                                                ),
-                                                                onTap: () {
-                                                                  int position =
-                                                                      allTasks.indexWhere((t) =>
-                                                                          t.id ==
-                                                                          task.id);
-                                                                  Task updated =
-                                                                      allTasks[
-                                                                              position]
-                                                                          .copy();
-                                                                  updated.assigneeUserId =
-                                                                      int.parse(
-                                                                          filteredAvatars[index]
-                                                                              .id);
-                                                                  updateCell(
-                                                                      task.id,
-                                                                      updated,
-                                                                      position);
-                                                                  Navigator.of(
-                                                                          context)
-                                                                      .pop();
-                                                                },
-                                                              ),
-                                                            );
-                                                          },
-                                                        )
-                                                      : const Center(),
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  _textController[7].clear();
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text(
-                                                  "Cancel",
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
+                                  setState(() {
+                                    for (var t in filteredTasks) {
+                                      t.isEditing = false;
+                                    }
+                                  });
+                                  showAssigneeDialog(context, task);
                                 },
                               ),
                               DataCell(
-                                Center(
-                                  child: Text(
-                                    task.formattedDate!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ),
+                                  Center(
+                                    child: Text(
+                                      task.formattedDate!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.visible,
+                                    ),
+                                  ), onTap: () {
+                                setState(() {
+                                  for (var t in filteredTasks) {
+                                    t.isEditing = false;
+                                  }
+                                });
+                                showPeriodDialog(context, task);
+                              }),
                               DataCell(
                                 Text(
                                   task.urgencyName,
@@ -760,57 +720,12 @@ class _GridState extends State<Grid> {
                                       Icons.more_vert,
                                     ),
                                     onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: const Text(
-                                              "Actions",
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                              ),
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () {
-                                                  duplicateCell(task.id);
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text(
-                                                  "Clone",
-                                                  style: TextStyle(
-                                                    color: Colors.green[400],
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  deleteCell(task.id);
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text(
-                                                  "Delete",
-                                                  style: TextStyle(
-                                                    color: Colors.red[400],
-                                                  ),
-                                                ),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  Navigator.of(context).pop();
-                                                },
-                                                child: Text(
-                                                  "Cancel",
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
+                                      setState(() {
+                                        for (var t in filteredTasks) {
+                                          t.isEditing = false;
+                                        }
+                                      });
+                                      showMoreDialog(context, task);
                                     },
                                   ),
                                 ),
@@ -824,6 +739,7 @@ class _GridState extends State<Grid> {
                 ),
               ),
               TextField(
+                focusNode: _focusNode,
                 controller: _textController[6],
                 decoration: const InputDecoration(
                   contentPadding: EdgeInsets.only(left: 25),
@@ -852,6 +768,199 @@ class _GridState extends State<Grid> {
         ),
         if (loading) const Loading(),
       ],
+    );
+  }
+
+  Future<dynamic> showMoreDialog(BuildContext context, Task task) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            "Actions",
+            style: TextStyle(
+              fontSize: 20,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                duplicateCell(task.id);
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Clone",
+                style: TextStyle(
+                  color: Colors.green[400],
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                deleteCell(task.id);
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Delete",
+                style: TextStyle(
+                  color: Colors.red[400],
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<dynamic> showPeriodDialog(BuildContext context, Task task) async {
+    DateTimeRange? period = await showDateRangePicker(
+      builder: (context, child) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 500,
+                  maxHeight: 495,
+                ),
+                child: child,
+              ),
+            ),
+          ],
+        );
+      },
+      context: context,
+      initialDateRange: DateTimeRange(start: task.startDate, end: task.endDate),
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2028),
+      helpText: "Period",
+      cancelText: "Cancel",
+      confirmText: "Save",
+      saveText: "Save",
+    );
+
+    int position = allTasks.indexWhere((t) => t.id == task.id);
+    Task updated = allTasks[position].copy();
+    updated.startDate = period!.start;
+    updated.endDate = period.end;
+    updateCell(task.id, updated, position);
+  }
+
+  Future<dynamic> showAssigneeDialog(BuildContext context, Task task) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        List<User> filteredAvatars = [...users];
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text(
+                "Assignee",
+                style: TextStyle(
+                  fontSize: 20,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    child: TextField(
+                      controller: _textController[7],
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Search Assignee ...",
+                        hintStyle: TextStyle(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      onChanged: (text) {
+                        var query = text.toLowerCase();
+                        List<User> temp = [...users];
+
+                        if (query.isNotEmpty) {
+                          temp = temp
+                              .where(
+                                  (u) => u.name.toLowerCase().startsWith(query))
+                              .toList();
+                        }
+                        setState(() {
+                          filteredAvatars = temp;
+                        });
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 230,
+                    height: 160,
+                    child: filteredAvatars.isNotEmpty
+                        ? GridView.builder(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                            ),
+                            itemCount: filteredAvatars.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return Center(
+                                child: InkWell(
+                                  child: Tooltip(
+                                    message: filteredAvatars[index].name,
+                                    child: CircleAvatar(
+                                      radius: 20,
+                                      backgroundImage: NetworkImage(
+                                        filteredAvatars[index].avatar,
+                                      ),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    int position = allTasks
+                                        .indexWhere((t) => t.id == task.id);
+                                    Task updated = allTasks[position].copy();
+                                    updated.assigneeUserId =
+                                        int.parse(filteredAvatars[index].id);
+                                    updateCell(task.id, updated, position);
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              );
+                            },
+                          )
+                        : const Center(),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    _textController[7].clear();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
