@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:task_management_system/services/api.dart';
 import '../models/task.dart';
@@ -19,63 +20,67 @@ class Grid extends StatefulWidget {
 class _GridState extends State<Grid> {
   /// STATES
   late List<Task> allTasks;
-  late List<Task> initTasks; // for filtering use
-  late List<Task> filteredTasks;
+  late List<Task> initTasks; // filtering
+  late List<Task> filteredTasks; // filtering
   late List<User> users;
-  int currentPage = 0;
-  int pageSize = 15;
   bool loading = false;
-  bool sort = false;
-  int index = 0;
+  int currentPage = 0; // pagination
+  int pageSize = 15; // pagination
+  bool sort = false; // sorting
+  int index = 0; // sorting
 
   /// CONTROLLERS
-  ///  0 - 5  for filter columns
-  ///  6      for add new task
-  ///  7      for search assignee
+  /// pagination
+  final ScrollController _scrollController = ScrollController();
+
+  ///  0 - 5  for filtering
+  ///  6      for adding
+  ///  7      for searching assignee
   final List<TextEditingController> _textController =
       List.generate(8, (i) => TextEditingController());
-  final ScrollController _scrollController = ScrollController();
+
+  ///  adding
   final FocusNode _focusNode = FocusNode();
 
   /// TABLE INFORMATION
   List<Map<String, dynamic>> columnDesc = [
     {
-      "position": 0,
+      "index": 0,
       "header": "Title",
       "width": 160,
       "identifier": "title",
       "filterable": true,
     },
     {
-      "position": 1,
+      "index": 1,
       "header": "Description",
       "width": 520,
       "identifier": "description",
       "filterable": true,
     },
     {
-      "position": 2,
+      "index": 2,
       "header": "Progress",
       "width": 100,
       "identifier": "progress",
       "filterable": false,
     },
     {
-      "position": 3,
+      "index": 3,
       "header": "Assignee",
       "width": 120,
       "identifier": "assignee",
       "filterable": true,
     },
     {
-      "position": 4,
+      "index": 4,
       "header": "Period",
       "width": 160,
       "identifier": "formattedDate",
       "filterable": true,
     },
     {
-      "position": 5,
+      "index": 5,
       "header": "Urgency",
       "width": 120,
       "identifier": "urgencyName",
@@ -91,10 +96,11 @@ class _GridState extends State<Grid> {
     "urgencyName": ""
   };
 
-  Map<String, String> editableValue = {
+  Map<String, dynamic> editableValue = {
+    "position": null,
     "title": "",
     "description": "",
-    "progress": ""
+    "progress": null
   };
 
   DataCell gridFilter(
@@ -255,6 +261,53 @@ class _GridState extends State<Grid> {
     }
   }
 
+  void setEditableValues(String id) {
+    int position = allTasks.indexWhere((t) => t.id == id);
+    if (editableValue["position"] == null ||
+        editableValue["position"] != position) {
+      setState(() {
+        editableValue["position"] = position;
+        editableValue["title"] = allTasks[position].title;
+        editableValue["description"] = allTasks[position].description;
+        editableValue["progress"] = allTasks[position].progress;
+      });
+    }
+  }
+
+  bool validateEditableValues() {
+    if (editableValue["title"].length <= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(
+            message: "Title Must Exceed 5 Characters !",
+            width: 350,
+            isSuccess: false,
+            duration: 3),
+      );
+      return false;
+    }
+    if (editableValue["description"].length <= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(
+            message: "Description Must Exceed 5 Characters !",
+            width: 400,
+            isSuccess: false,
+            duration: 3),
+      );
+      return false;
+    }
+    if (editableValue["progress"] == null || editableValue["progress"] > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        toast(
+            message: "Progress Must Be From 0 To 100 !",
+            width: 350,
+            isSuccess: false,
+            duration: 3),
+      );
+      return false;
+    }
+    return true;
+  }
+
   void addCell(String title) async {
     setState(() {
       loading = true;
@@ -323,6 +376,9 @@ class _GridState extends State<Grid> {
           allTasks[position] = data;
           initTasks[position] = data;
           filteredTasks[position] = data;
+          for (var t in filteredTasks) {
+            t.isEditing = false;
+          }
         });
         _textController[7].clear();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -449,6 +505,7 @@ class _GridState extends State<Grid> {
     allTasks = widget.tasks;
     users = widget.users;
 
+    // pagination
     currentPage += 1;
     initTasks = allTasks.take(currentPage * pageSize).toList();
     filteredTasks = [...initTasks];
@@ -460,6 +517,7 @@ class _GridState extends State<Grid> {
       }
     });
 
+    // adding
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
         setState(() {
@@ -532,7 +590,7 @@ class _GridState extends State<Grid> {
                             ...columnDesc.map(
                               (c) => gridFilter(
                                   columnWidth: c["width"],
-                                  columnIndex: c["position"],
+                                  columnIndex: c["index"],
                                   header: c["header"],
                                   filterKey: c["identifier"],
                                   filterable: c["filterable"]),
@@ -581,7 +639,30 @@ class _GridState extends State<Grid> {
                                           decoration: const InputDecoration(
                                             border: InputBorder.none,
                                           ),
-                                          onFieldSubmitted: (text) {},
+                                          onChanged: (text) {
+                                            setEditableValues(task.id);
+                                            setState(() {
+                                              editableValue["title"] = text;
+                                            });
+                                          },
+                                          onFieldSubmitted: (text) {
+                                            setEditableValues(task.id);
+                                            var validated =
+                                                validateEditableValues();
+                                            if (validated) {
+                                              Task updated = allTasks[
+                                                      editableValue["position"]]
+                                                  .copy();
+                                              updated.title =
+                                                  editableValue["title"];
+                                              updated.description =
+                                                  editableValue["description"];
+                                              updated.progress =
+                                                  editableValue["progress"];
+                                              updateCell(task.id, updated,
+                                                  editableValue["position"]);
+                                            }
+                                          },
                                         ),
                                 ),
                                 onTap: () {
@@ -608,7 +689,31 @@ class _GridState extends State<Grid> {
                                           decoration: const InputDecoration(
                                             border: InputBorder.none,
                                           ),
-                                          onFieldSubmitted: (text) {},
+                                          onChanged: (text) {
+                                            setEditableValues(task.id);
+                                            setState(() {
+                                              editableValue["description"] =
+                                                  text;
+                                            });
+                                          },
+                                          onFieldSubmitted: (text) {
+                                            setEditableValues(task.id);
+                                            var validated =
+                                                validateEditableValues();
+                                            if (validated) {
+                                              Task updated = allTasks[
+                                                      editableValue["position"]]
+                                                  .copy();
+                                              updated.title =
+                                                  editableValue["title"];
+                                              updated.description =
+                                                  editableValue["description"];
+                                              updated.progress =
+                                                  editableValue["progress"];
+                                              updateCell(task.id, updated,
+                                                  editableValue["position"]);
+                                            }
+                                          },
                                         ),
                                 ),
                                 onTap: () {
@@ -641,11 +746,44 @@ class _GridState extends State<Grid> {
                                           )
                                         : TextFormField(
                                             initialValue: "${task.progress}",
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly
+                                            ],
                                             textAlign: TextAlign.center,
                                             decoration: const InputDecoration(
                                               border: InputBorder.none,
                                             ),
-                                            onFieldSubmitted: (text) {},
+                                            onChanged: (text) {
+                                              setEditableValues(task.id);
+                                              setState(() {
+                                                editableValue["progress"] =
+                                                    text.isNotEmpty
+                                                        ? int.parse(text)
+                                                        : null;
+                                              });
+                                            },
+                                            onFieldSubmitted: (text) {
+                                              setEditableValues(task.id);
+                                              var validated =
+                                                  validateEditableValues();
+                                              if (validated) {
+                                                Task updated = allTasks[
+                                                        editableValue[
+                                                            "position"]]
+                                                    .copy();
+                                                updated.title =
+                                                    editableValue["title"];
+                                                updated.description =
+                                                    editableValue[
+                                                        "description"];
+                                                updated.progress =
+                                                    editableValue["progress"];
+                                                updateCell(task.id, updated,
+                                                    editableValue["position"]);
+                                              }
+                                            },
                                           ),
                                   ),
                                 ),
@@ -753,7 +891,7 @@ class _GridState extends State<Grid> {
                   if (text.length <= 5) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       toast(
-                          message: "New Task Title Must Exceed 5 Characters !",
+                          message: "New Title Must Exceed 5 Characters !",
                           width: 400,
                           isSuccess: false,
                           duration: 3),
@@ -852,11 +990,13 @@ class _GridState extends State<Grid> {
       saveText: "Save",
     );
 
-    int position = allTasks.indexWhere((t) => t.id == task.id);
-    Task updated = allTasks[position].copy();
-    updated.startDate = period!.start;
-    updated.endDate = period.end;
-    updateCell(task.id, updated, position);
+    if (period != null) {
+      int position = allTasks.indexWhere((t) => t.id == task.id);
+      Task updated = allTasks[position].copy();
+      updated.startDate = period.start;
+      updated.endDate = period.end;
+      updateCell(task.id, updated, position);
+    }
   }
 
   Future<dynamic> showAssigneeDialog(BuildContext context, Task task) {
