@@ -1015,31 +1015,51 @@ class _GridState extends State<Grid> {
                   ),
                 ),
 
-                /// ADD TEXT INPUT
-                TextField(
-                  focusNode: _focusNode,
-                  controller: _textController[6],
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.only(left: 25),
-                    border: InputBorder.none,
-                    hintText: "Add New Task ...",
-                    hintStyle: TextStyle(
-                      fontStyle: FontStyle.italic,
+                Row(
+                  children: [
+                    /// ADD TEXT INPUT
+                    Expanded(
+                      child: TextField(
+                        focusNode: _focusNode,
+                        controller: _textController[6],
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.only(left: 25),
+                          border: InputBorder.none,
+                          hintText: "Add New Task ...",
+                          hintStyle: TextStyle(
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                        onSubmitted: (text) {
+                          if (text.length <= 5) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              toast(
+                                  message:
+                                      "New Title Must Exceed 5 Characters !",
+                                  width: 400,
+                                  isSuccess: false,
+                                  duration: 3),
+                            );
+                          } else {
+                            addCell(text);
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                  onSubmitted: (text) {
-                    if (text.length <= 5) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        toast(
-                            message: "New Title Must Exceed 5 Characters !",
-                            width: 400,
-                            isSuccess: false,
-                            duration: 3),
-                      );
-                    } else {
-                      addCell(text);
-                    }
-                  },
+
+                    /// PAGINATE BUTTON
+                    TextButton(
+                      onPressed: () {
+                        onPaginate();
+                      },
+                      child: Text(
+                        "Load More",
+                        style: TextStyle(
+                          color: Colors.green[400],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
