@@ -549,219 +549,123 @@ class _GridState extends State<Grid> {
 
     return Stack(
       children: [
-        Container(
-          width: gridWidth,
-          margin: EdgeInsets.symmetric(
-            horizontal: gridLRMargin,
-            vertical: gridTBMargin,
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+        /// TAP REGION
+        TapRegion(
+          onTapOutside: (event) {
+            setState(() {
+              for (var t in filteredTasks) {
+                t.isEditing = false;
+              }
+            });
+          },
+          child: Container(
+            width: gridWidth,
+            margin: EdgeInsets.symmetric(
+              horizontal: gridLRMargin,
+              vertical: gridTBMargin,
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  /// SCROLLING
                   child: SingleChildScrollView(
-                    controller: _scrollController,
-                    scrollDirection: Axis.vertical,
-                    child: DataTable(
-                      sortAscending: sort,
-                      sortColumnIndex: index,
-                      columns: [
-                        ...List.generate(
-                          columnDesc.length,
-                          (index) => DataColumn(
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      scrollDirection: Axis.vertical,
+
+                      /// TABLE
+                      child: DataTable(
+                        sortAscending: sort,
+                        sortColumnIndex: index,
+
+                        /// COLUMN
+                        columns: [
+                          /// HEADER
+                          ...List.generate(
+                            columnDesc.length,
+                            (index) => DataColumn(
+                              label: Text(
+                                columnDesc[index]["header"],
+                              ),
+                              onSort: (columnIndex, ascending) {
+                                onSortColumn(columnIndex, ascending);
+                              },
+                            ),
+                          ),
+                          const DataColumn(
                             label: Text(
-                              columnDesc[index]["header"],
+                              "",
                             ),
-                            onSort: (columnIndex, ascending) {
-                              onSortColumn(columnIndex, ascending);
-                            },
                           ),
-                        ),
-                        const DataColumn(
-                          label: Text(
-                            "",
-                          ),
-                        ),
-                      ],
-                      rows: [
-                        DataRow(
-                          cells: [
-                            ...columnDesc.map(
-                              (c) => gridFilter(
-                                  columnWidth: c["width"],
-                                  columnIndex: c["index"],
-                                  header: c["header"],
-                                  filterKey: c["identifier"],
-                                  filterable: c["filterable"]),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 48,
-                                child: Center(
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.clear,
+                        ],
+
+                        /// ROW
+                        rows: [
+                          /// FILTER
+                          DataRow(
+                            cells: [
+                              ...columnDesc.map(
+                                (c) => gridFilter(
+                                    columnWidth: c["width"],
+                                    columnIndex: c["index"],
+                                    header: c["header"],
+                                    filterKey: c["identifier"],
+                                    filterable: c["filterable"]),
+                              ),
+                              DataCell(
+                                SizedBox(
+                                  width: 48,
+                                  child: Center(
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.clear,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          filterQuery.forEach((key, value) =>
+                                              filterQuery[key] = "");
+                                        });
+                                        onFilterColumn(
+                                            query: filterQuery, clear: true);
+                                      },
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        filterQuery.forEach((key, value) =>
-                                            filterQuery[key] = "");
-                                      });
-                                      onFilterColumn(
-                                          query: filterQuery, clear: true);
-                                    },
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        ...filteredTasks.map(
-                          (task) => DataRow(
-                            color: task.isEditing
-                                ? WidgetStateProperty.all(
-                                    Colors.black.withOpacity(0.1))
-                                : null,
-                            cells: [
-                              DataCell(
-                                ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 160),
-                                  child: !task.isEditing
-                                      ? Text(
-                                          task.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )
-                                      : TextFormField(
-                                          initialValue: task.title,
-                                          decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                          ),
-                                          onChanged: (text) {
-                                            setEditableValues(task.id);
-                                            setState(() {
-                                              editableValue["title"] = text;
-                                            });
-                                          },
-                                          onFieldSubmitted: (text) {
-                                            setEditableValues(task.id);
-                                            var validated =
-                                                validateEditableValues();
-                                            if (validated) {
-                                              Task updated = allTasks[
-                                                      editableValue["position"]]
-                                                  .copy();
-                                              updated.title =
-                                                  editableValue["title"];
-                                              updated.description =
-                                                  editableValue["description"];
-                                              updated.progress =
-                                                  editableValue["progress"];
-                                              updateCell(task.id, updated,
-                                                  editableValue["position"]);
-                                            }
-                                          },
-                                        ),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    for (var t in filteredTasks) {
-                                      t.isEditing = false;
-                                    }
-                                    task.isEditing = true;
-                                  });
-                                },
-                              ),
-                              DataCell(
-                                ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 520),
-                                  child: !task.isEditing
-                                      ? Text(
-                                          task.description,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )
-                                      : TextFormField(
-                                          initialValue: task.description,
-                                          decoration: const InputDecoration(
-                                            border: InputBorder.none,
-                                          ),
-                                          onChanged: (text) {
-                                            setEditableValues(task.id);
-                                            setState(() {
-                                              editableValue["description"] =
-                                                  text;
-                                            });
-                                          },
-                                          onFieldSubmitted: (text) {
-                                            setEditableValues(task.id);
-                                            var validated =
-                                                validateEditableValues();
-                                            if (validated) {
-                                              Task updated = allTasks[
-                                                      editableValue["position"]]
-                                                  .copy();
-                                              updated.title =
-                                                  editableValue["title"];
-                                              updated.description =
-                                                  editableValue["description"];
-                                              updated.progress =
-                                                  editableValue["progress"];
-                                              updateCell(task.id, updated,
-                                                  editableValue["position"]);
-                                            }
-                                          },
-                                        ),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    for (var t in filteredTasks) {
-                                      t.isEditing = false;
-                                    }
-                                    task.isEditing = true;
-                                  });
-                                },
-                              ),
-                              DataCell(
-                                Center(
-                                  child: ConstrainedBox(
+                            ],
+                          ),
+
+                          /// DATA
+                          ...filteredTasks.map(
+                            (task) => DataRow(
+                              color: task.isEditing
+                                  ? WidgetStateProperty.all(
+                                      Colors.black.withOpacity(0.1))
+                                  : null,
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
                                     constraints:
-                                        const BoxConstraints(maxWidth: 100),
+                                        const BoxConstraints(maxWidth: 160),
                                     child: !task.isEditing
-                                        ? Tooltip(
-                                            message: "${task.progress}%",
-                                            preferBelow: false,
-                                            verticalOffset: -13,
-                                            child: LinearPercentIndicator(
-                                              percent: task.progress / 100,
-                                              progressColor: task.progress >= 50
-                                                  ? Colors.green[400]
-                                                  : Colors.red[400],
-                                              lineHeight: 15,
-                                              width: 100,
-                                            ),
+                                        ? Text(
+                                            task.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           )
-                                        : TextFormField(
-                                            initialValue: "${task.progress}",
-                                            keyboardType: TextInputType.number,
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly
-                                            ],
-                                            textAlign: TextAlign.center,
+                                        :
+
+                                        /// EDITABLE TEXT INPUT
+                                        TextFormField(
+                                            initialValue: task.title,
                                             decoration: const InputDecoration(
                                               border: InputBorder.none,
                                             ),
                                             onChanged: (text) {
                                               setEditableValues(task.id);
                                               setState(() {
-                                                editableValue["progress"] =
-                                                    text.isNotEmpty
-                                                        ? int.parse(text)
-                                                        : null;
+                                                editableValue["title"] = text;
                                               });
                                             },
                                             onFieldSubmitted: (text) {
@@ -786,124 +690,282 @@ class _GridState extends State<Grid> {
                                             },
                                           ),
                                   ),
+                                  onTap: () {
+                                    setState(() {
+                                      for (var t in filteredTasks) {
+                                        t.isEditing = false;
+                                      }
+                                      task.isEditing = true;
+                                    });
+                                  },
                                 ),
-                                onTap: () {
-                                  setState(() {
-                                    for (var t in filteredTasks) {
-                                      t.isEditing = false;
-                                    }
-                                    task.isEditing = true;
-                                  });
-                                },
-                              ),
-                              DataCell(
-                                task.assigneeUserId > 0
-                                    ? Center(
-                                        child: Tooltip(
-                                          message: users
-                                              .firstWhere((u) =>
-                                                  int.parse(u.id) ==
-                                                  task.assigneeUserId)
-                                              .name,
-                                          preferBelow: false,
-                                          verticalOffset: -13,
-                                          child: CircleAvatar(
-                                            radius: 15,
-                                            backgroundImage: NetworkImage(
-                                              users
-                                                  .firstWhere((u) =>
-                                                      int.parse(u.id) ==
-                                                      task.assigneeUserId)
-                                                  .avatar,
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 520),
+                                    child: !task.isEditing
+                                        ? Text(
+                                            task.description,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        :
+
+                                        /// EDITABLE TEXT INPUT
+                                        TextFormField(
+                                            initialValue: task.description,
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                            ),
+                                            onChanged: (text) {
+                                              setEditableValues(task.id);
+                                              setState(() {
+                                                editableValue["description"] =
+                                                    text;
+                                              });
+                                            },
+                                            onFieldSubmitted: (text) {
+                                              setEditableValues(task.id);
+                                              var validated =
+                                                  validateEditableValues();
+                                              if (validated) {
+                                                Task updated = allTasks[
+                                                        editableValue[
+                                                            "position"]]
+                                                    .copy();
+                                                updated.title =
+                                                    editableValue["title"];
+                                                updated.description =
+                                                    editableValue[
+                                                        "description"];
+                                                updated.progress =
+                                                    editableValue["progress"];
+                                                updateCell(task.id, updated,
+                                                    editableValue["position"]);
+                                              }
+                                            },
+                                          ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      for (var t in filteredTasks) {
+                                        t.isEditing = false;
+                                      }
+                                      task.isEditing = true;
+                                    });
+                                  },
+                                ),
+                                DataCell(
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 100),
+                                      child: !task.isEditing
+                                          ? Tooltip(
+                                              message: "${task.progress}%",
+                                              preferBelow: false,
+                                              verticalOffset: -13,
+                                              child: LinearPercentIndicator(
+                                                percent: task.progress / 100,
+                                                progressColor:
+                                                    task.progress >= 50
+                                                        ? Colors.green[400]
+                                                        : Colors.red[400],
+                                                lineHeight: 15,
+                                                width: 100,
+                                              ),
+                                            )
+                                          :
+
+                                          /// EDITABLE TEXT INPUT
+                                          TextFormField(
+                                              initialValue: "${task.progress}",
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly
+                                              ],
+                                              textAlign: TextAlign.center,
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                              ),
+                                              onChanged: (text) {
+                                                setEditableValues(task.id);
+                                                setState(() {
+                                                  editableValue["progress"] =
+                                                      text.isNotEmpty
+                                                          ? int.parse(text)
+                                                          : null;
+                                                });
+                                              },
+                                              onFieldSubmitted: (text) {
+                                                setEditableValues(task.id);
+                                                var validated =
+                                                    validateEditableValues();
+                                                if (validated) {
+                                                  Task updated = allTasks[
+                                                          editableValue[
+                                                              "position"]]
+                                                      .copy();
+                                                  updated.title =
+                                                      editableValue["title"];
+                                                  updated.description =
+                                                      editableValue[
+                                                          "description"];
+                                                  updated.progress =
+                                                      editableValue["progress"];
+                                                  updateCell(
+                                                      task.id,
+                                                      updated,
+                                                      editableValue[
+                                                          "position"]);
+                                                }
+                                              },
+                                            ),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      for (var t in filteredTasks) {
+                                        t.isEditing = false;
+                                      }
+                                      task.isEditing = true;
+                                    });
+                                  },
+                                ),
+                                DataCell(
+                                  task.assigneeUserId > 0
+                                      ? Center(
+                                          child: Tooltip(
+                                            message: users
+                                                .firstWhere((u) =>
+                                                    int.parse(u.id) ==
+                                                    task.assigneeUserId)
+                                                .name,
+                                            preferBelow: false,
+                                            verticalOffset: -13,
+                                            child: CircleAvatar(
+                                              radius: 15,
+                                              backgroundImage: NetworkImage(
+                                                users
+                                                    .firstWhere((u) =>
+                                                        int.parse(u.id) ==
+                                                        task.assigneeUserId)
+                                                    .avatar,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      )
-                                    : const Center(),
-                                onTap: () {
+                                        )
+                                      : const Center(),
+
+                                  /// DIALOG
+                                  onTap: () {
+                                    setState(() {
+                                      for (var t in filteredTasks) {
+                                        t.isEditing = false;
+                                      }
+                                    });
+                                    showAssigneeDialog(context, task);
+                                  },
+                                ),
+                                DataCell(
+                                    Center(
+                                      child: Text(
+                                        task.formattedDate!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+
+                                    /// DIALOG
+                                    onTap: () {
                                   setState(() {
                                     for (var t in filteredTasks) {
                                       t.isEditing = false;
                                     }
                                   });
-                                  showAssigneeDialog(context, task);
-                                },
-                              ),
-                              DataCell(
+                                  showPeriodDialog(context, task);
+                                }),
+                                DataCell(
                                   Center(
                                     child: Text(
-                                      task.formattedDate!,
+                                      task.urgencyName,
                                       maxLines: 1,
                                       overflow: TextOverflow.visible,
                                     ),
-                                  ), onTap: () {
-                                setState(() {
-                                  for (var t in filteredTasks) {
-                                    t.isEditing = false;
-                                  }
-                                });
-                                showPeriodDialog(context, task);
-                              }),
-                              DataCell(
-                                Text(
-                                  task.urgencyName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.visible,
+                                  ),
+
+                                  /// DIALOG
+                                  onTap: () {
+                                    setState(() {
+                                      for (var t in filteredTasks) {
+                                        t.isEditing = false;
+                                      }
+                                    });
+                                    showUrgencyDialog(context, task);
+                                  },
                                 ),
-                              ),
-                              DataCell(
-                                Center(
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.more_vert,
+                                DataCell(
+                                  Center(
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                      ),
+
+                                      /// DIALOG
+                                      onPressed: () {
+                                        setState(() {
+                                          for (var t in filteredTasks) {
+                                            t.isEditing = false;
+                                          }
+                                        });
+                                        showMoreDialog(context, task);
+                                      },
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        for (var t in filteredTasks) {
-                                          t.isEditing = false;
-                                        }
-                                      });
-                                      showMoreDialog(context, task);
-                                    },
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              TextField(
-                focusNode: _focusNode,
-                controller: _textController[6],
-                decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.only(left: 25),
-                  border: InputBorder.none,
-                  hintText: "Add New Task ...",
-                  hintStyle: TextStyle(
-                    fontStyle: FontStyle.italic,
+
+                /// ADD TEXT INPUT
+                TextField(
+                  focusNode: _focusNode,
+                  controller: _textController[6],
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.only(left: 25),
+                    border: InputBorder.none,
+                    hintText: "Add New Task ...",
+                    hintStyle: TextStyle(
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
+                  onSubmitted: (text) {
+                    if (text.length <= 5) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        toast(
+                            message: "New Title Must Exceed 5 Characters !",
+                            width: 400,
+                            isSuccess: false,
+                            duration: 3),
+                      );
+                    } else {
+                      addCell(text);
+                    }
+                  },
                 ),
-                onSubmitted: (text) {
-                  if (text.length <= 5) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      toast(
-                          message: "New Title Must Exceed 5 Characters !",
-                          width: 400,
-                          isSuccess: false,
-                          duration: 3),
-                    );
-                  } else {
-                    addCell(text);
-                  }
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+
+        /// SPINNER
         if (loading) const Loading(),
       ],
     );
@@ -960,6 +1022,54 @@ class _GridState extends State<Grid> {
         );
       },
     );
+  }
+
+  Future<dynamic> showUrgencyDialog(BuildContext context, Task task) {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          String dropdownValue = task.urgencyName;
+
+          return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text(
+                "Urgency",
+                style: TextStyle(
+                  fontSize: 20,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton(
+                    value: dropdownValue,
+                    onChanged: (value) {
+                      setState(() {
+                        dropdownValue = value!;
+                      });
+
+                      int position =
+                          allTasks.indexWhere((t) => t.id == task.id);
+                      Task updated = allTasks[position].copy();
+                      updated.urgencyName = dropdownValue;
+                      updateCell(task.id, updated, position);
+                      Navigator.of(context).pop();
+                    },
+                    items: ["High", "Medium", "Low"].map((value) {
+                      return DropdownMenuItem(
+                        value: value,
+                        child: Text(
+                          value,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          });
+        });
   }
 
   Future<dynamic> showPeriodDialog(BuildContext context, Task task) async {
